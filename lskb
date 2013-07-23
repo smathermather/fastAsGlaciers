@@ -1,0 +1,3 @@
+# Lists total amount of space a directory takes in kilobytes.
+
+awk '{ x += $5 } ; END { print "total kilobytes: " (x + 1023 )/1024 }'

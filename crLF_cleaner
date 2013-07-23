@@ -1,0 +1,13 @@
+#!/bin/sh
+# Removes carriage returns from text file.
+# Fixes incompatibility between windows and Unix
+# text files.
+
+FILELIST=$1
+
+for FILE in $FILELIST
+do
+	mv $FILE $FILE.BAK
+	tr -d '\015' < $FILE.BAK > $FILE
+
+done

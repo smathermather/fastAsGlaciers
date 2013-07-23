@@ -1,0 +1,86 @@
+#!/bin/sh
+# Creates frame list for a block from the Directory structure
+# Running the scripts that this script creates lists what files
+# are available in the slc and sar directories for a given block.
+
+
+##################################################################################################################
+#Get Directory Information from the User
+##################################################################################################################
+
+USAGE="Usage: $0 [block number]"
+
+##################################################################################################################
+#Generate list of orbit and frame names from the Frames.nam files in the orb_* directories
+##################################################################################################################
+
+#DORBLIST is the list of directory names for the orbits within the block
+DORBLIST=`cat orb_*/Frames.nam | grep '#File' | tr '//' ' ' | awk '{print $8 ;}'`
+#NORBLIST is the list of orbits that correspond with the directory names
+NORBLIST=`cat orb_*/Frames.nam | grep -v '#' | awk '{ print $4 ; }' | uniq`
+#COUNTLIST is the nuber of orbit directories in the block
+COUNTLIST=`cat orb_*/Frames.nam | grep '#File' | tr '//' ' ' | awk '{print "number" ;}' | uniq -c | awk '{ print $1 ; }'`
+#TOTALLIST is the list of orbits and frames within the block
+TOTALLIST=`cat orb_*/Frames.nam | grep -v '#' | awk '{ print $4 $2 ;}' | tr '/"' '/'`
+
+##################################################################################################################
+#Some variables for the naming and placement of the output scripts
+##################################################################################################################
+
+LOCATIONNAME=`pwd | tr '//' ' ' | awk '{ print $5 ;}'`
+FILENAME= echo zDIRLIST$LOCATIONNAME
+SLCDIR='/amm/missions/mamm_mission/slc/orbits'
+SARDIR='/amm/missions/mamm_mission/sar'
+
+echo $TOTALLIST > TOTALLIST.txt
+echo There are $COUNTLIST Orbits in this block.
+
+##################################################################################################################
+#Create SED script for finding and replacing the orbit names with the directory names
+##################################################################################################################
+echo sed > SEDLIST.txt
+x=0
+while [ $x -lt $COUNTLIST ]
+do
+	#echo $x
+	x=`echo "$x + 1"| bc `
+	echo -e \'s\/ >> SEDLIST.txt
+	echo $NORBLIST | awk -v var=$x '{ print $var ; }' >> SEDLIST.txt
+	echo \/ >> SEDLIST.txt
+	echo $DORBLIST | awk -v var=$x '{ print $var ; }' >> SEDLIST.txt
+	echo \/g\' >> SEDLIST.txt
+done
+
+SEDLIST=`cat SEDLIST.txt`
+
+echo $SEDLIST > 'SEDLIST1.txt'
+
+echo `sed -e 's/\/\ /\//g' -e 's/\ \//\//g' 'SEDLIST1.txt'` TOTALLIST.txt > SEDCOMMAND.txt
+
+chmod +x SEDCOMMAND.txt
+
+##################################################################################################################
+#Pipe resultant text file back into sed to add "ls" command, and to specify file
+##################################################################################################################
+
+SEDCOMMAND.txt | sed -e 's/orb_/ls -l orb_/g' -e 's/\/ /\/*.demulk\; /g' -e 's/\n/*.demulk/g' | tr '\012' '&*%' > $SLCDIR/zDIRLIST$LOCATIONNAME
+SEDCOMMAND.txt | sed -e 's/orb_/ls -l orb_/g' -e 's/\/ /\/img.0\; /g' -e 's/\n/img.0/g' | tr '\012' '&*%'> $SARDIR/zDIRLIST$LOCATIONNAME
+chmod +x $SLCDIR/zDIRLIST$LOCATIONNAME
+chmod +x $SARDIR/zDIRLIST$LOCATIONNAME
+
+#To run files after creating them, uncomment two lines below.
+#$SLCDIR/zDIRLIST$LOCATIONNAME
+#$SARDIR/zDIRLIST$LOCATIONNAME
+
+##################################################################################################################
+#Cleanup
+##################################################################################################################
+
+rm -f TOTALLIST.txt SEDLIST.txt SEDLIST1.txt SEDCOMMAND.txt #DIRLIST.txt
+
+##################################################################################################################
+#Feedback
+##################################################################################################################
+
+echo File zDIRLIST$LOCATIONNAME has been generated at $SLCDIR.
+echo File zDIRLIST$LOCATIONNAME has been generated at $SARDIR.

@@ -1,0 +1,55 @@
+#!/bin/sh
+# This script compares file size to lines and sample
+# to determine whether imagery is 8-bit or 16-bit
+# echos sz16 for 16-bit and sz08 for 8-bit
+
+# dependency-- requires 3 inputs and a script called calc
+# -- a sh script with the following line in it:
+# echo "scale=4; $1" | bc ;exit
+
+# Check for inputs and assign to 3 variables
+if [ "$1" ]
+then
+	FILESIZE=`ls -l $1 | awk '{ print $5 ; }'`
+	if [ "$2" ]
+	then
+		LINES=$2	
+		if [ "$3" ]
+		then
+			SAMPLES=$3
+		else
+			tail -8 $0 | tr '#' ' '
+			exit 1
+		fi
+	else
+		tail -8 $0 | tr '#' ' '
+		exit 1
+	fi
+else
+	tail -8 $0 | tr '#' ' '
+	exit 1
+fi
+
+SIZE08=`calc $LINES*$SAMPLES`
+SIZE16=`calc $LINES*$SAMPLES*2`
+
+if [ $FILESIZE = $SIZE16 ]
+then
+	echo "sz16"
+else
+	if [ $FILESIZE = $SIZE8 ]
+	then
+		echo "sz08"
+	else
+		echo $LINES"*"$SAMPLES"<> filesize"
+	fi
+	
+fi
+
+#	ERROR: Insufficient Arguments
+
+#	imsize is used to test whether an image is 8-bit or 16-bit
+
+#	imsize needs 3 arguments:
+#		% imsize File Lines Samples
+

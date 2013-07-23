@@ -1,0 +1,136 @@
+#!/bin/sh --login -x
+# Will catalog the contents of an archive on disk, returning file, archive date, and fsf #
+# 
+
+### Total fast forwards to retrieve.
+maxFsfs=1000
+startCount=1
+
+### Do Tapeloading-- load up to 15 tapes sequentially
+maxTape=4
+
+devName="/dev/rmt/tps3d4nrnsv"
+currentDir=`pwd`
+
+iTape=1
+while [ $iTape -lt $maxTape ]
+do
+	stacker -l $iTape;
+	sleep 60;
+
+	### Check to make sure file and directory have been specified.
+	if [ "$1" ]
+	then
+		if [ `basename $1` == ""]
+		then
+			echo "Please give file name, as well as location"
+			inputCheck="No"
+		else
+			if [ `dirname $1` == "." ]
+			then
+				inputCheck="No"
+			else
+				tableLocation=$1
+			########## Make sure there are no files in current directory ##########		
+
+			fileListDelete=`ls -d *`
+			if [ "$fileListDelete" == "" ]
+			then	
+
+			########## Check Tape Name ##########
+
+			### Rewind to begining	
+			echo "mt -f $devName rew"
+			mt -f $devName rew
+			mt -f $devName rew
+		
+			### Get first record off tape (tapename)
+			echo "cpio -icdm "*" < $devName > /dev/null"
+			cpio -icdm "*" < $devName > /dev/null
+			
+			### Set tapename = retrieved file
+			tapeName=`ls`
+			
+			### cleanup
+			rm $tapeName
+	
+	
+			########### Get data from tape from each fsf ###########
+			count=$startCount
+			while [ $count -lt $maxFsfs ]
+			do
+				count=`expr $count + 1`	
+				otherCount=`expr $count + 1`
+				echo "mt -f $devName rew"
+				mt -f $devName rew
+				mt -f $devName rew
+		
+				### FSF to the count'th position on tape
+				echo "mt -f $devName fsf $otherCount"
+				mt -f $devName fsf $otherCount
+	
+				if [ "$?" = 0 ] ; then	# Check to ensure we're not at the end of the tape
+					### Retrieve the data
+					mt -f $devName rew
+					mt -f $devName rew
+					mt -f $devName fsf $count
+					echo "cpio -icd "*" < $devName > /dev/null"
+					cpio -icdm "*" < $devName > /dev/null	
+				else
+					echo "Reached end of tape.  Moving on to next tape in Stacker."
+					break
+				fi
+	
+				### Find out what retrieved
+				fileList=`find $currentDir/.`
+			
+				### Write tapename, fsf num, and files to text file
+				for file in $fileList
+				do
+					if [ -d "$file" ]
+					then
+						echo "Hello!" > /dev/null	# Do nothing
+					else
+					#### Record info to text file
+						echo $tapeName "	" $count "	" $file "	" \
+						`stat -m $file | awk '{ print $6 " " $7 " " $9 " " $8}'` >> $tableLocation
+					fi
+				done
+	
+				### Clean up after retrieved data
+				fileListDelete=`ls -d`
+				for file in $fileListDelete
+				do
+					if [ -d "$file" ]
+					then
+						rm -rf $file	# Clean up directories
+					else
+						echo "Hello o o o o o!" > /dev/null	# note the echos returning from /dev/null
+					fi
+				done
+			done
+		else
+			### If there's already data in the directory it will not run.
+			### Since the script indescriminately deletes all data as a
+			### final step, this is a safety feature.
+			echo
+			echo "	Only use this command in an empty directory.  Check directory and rerun."
+			echo "	You are in the following directory:" $currentDir
+			echo
+		fi
+				fi
+			fi
+	else
+		echo "Please give an output location & name for tape contents"
+		inputCheck="No"
+	fi
+
+	mt -f $devName offl;
+	sleep 60;
+
+	#echo $iTape
+	
+	stacker -u $iTape;
+	iTape=`expr $iTape + 1`
+
+done

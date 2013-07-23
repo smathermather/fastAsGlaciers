@@ -1,0 +1,62 @@
+#!/bin/sh
+# Queries the RAMP Database for info on baseline and bandwidth for all orbit/frame combinations.
+# Requires a list of the *.rslc.par files in the database in a file called rslc.par_list1
+
+#FILELIST='/amm/missions/mamm_mission/ifr/orb_695/frm_10733/frm_10734/R126010EL1016.rslc.par'
+FILELIST=`more rslc.par_list`
+OUTPUTLOCATION='/export/home/smather/ifrExtractionList_wlatlon_new.txt'
+		echo reference_frame secondary_frame path_direction center_lat center_lon \
+			corner1lon corner1lat corner2lon corner2lat corner3lon corner3lat \
+			corner4long corner4lat reference_along_track_bandwidth \
+			secondary_along_track_bandwidth baseline_constant_term1 \
+			baseline_constant_term2 baseline_constant_term3 refined_baseline_constant_term1 \
+			refined_baseline_constant_term2 refined_baseline_constant_term3 > $OUTPUTLOCATION
+
+for FILE in $FILELIST
+do
+	if [ -f $FILE ]
+	then
+
+		DIRLIST=`dirname $FILE`		
+		SINGFILELIST=`basename $FILE | tr '.' ' ' | awk '{ print $1 ; }'`
+		ROOTNAME=$DIRLIST'/'$SINGFILELIST		
+		
+		if [ -f $ROOTNAME.off.par ]
+		then
+
+			if [ -f $ROOTNAME.int.par ]
+			then
+				REFFRAME=`more $ROOTNAME.off.par | grep reference_slc_filename | tr '/.' ' ' | awk '{ print $9 ; }'`
+				PATHDIRECTION=`more $FILE | grep flight_path_direction | awk '{ print $2 ;} '`
+				LONLAT=`more $FILE | grep center_line_center_pixel`
+				CENTERLON=`echo $LONLAT | awk '{ print $6 ;}'`
+				CENTERLAT=`echo $LONLAT | awk '{ print $7 ;}'`
+
+				#extract corner coordinates
+				LONLATC1=`more $FILE | grep first_line_first_pixel`
+				LONC1=`echo $LONLAT | awk '{ print $6 ;}'`
+				LATC1=`echo $LONLAT | awk '{ print $7 ;}'`
+				LONLATC2=`more $FILE | grep first_line_last_pixel`
+				LONC2=`echo $LONLAT | awk '{ print $6 ;}'`
+				LATC2=`echo $LONLAT | awk '{ print $7 ;}'`
+				LONLATC3=`more $FILE | grep last_line_last_pixel`
+				LONC3=`echo $LONLAT | awk '{ print $6 ;}'`
+				LATC3=`echo $LONLAT | awk '{ print $7 ;}'`
+				LONLATC4=`more $FILE | grep last_line_first_pixel`
+				LONC4=`echo $LONLAT | awk '{ print $6 ;}'`
+				LATC4=`echo $LONLAT | awk '{ print $7 ;}'`
+
+				REFALONTRACKBWIDTH=`more $FILE | grep reference_along_track_bandwidth | awk '{print $2; }'`
+				SECALONTRACKBWIDTH=`more $FILE | grep secondary_along_track_bandwidth | awk '{print $2; }'`
+				BASECONSTTERM=`more $ROOTNAME.int.par | grep baseline_constant_term | awk '{ print $2 " " $3 " " $4 ;}'`
+				BASELINE=`echo $BASECONSTTERM | awk '{ print $1 " " $2 " " $3 ;}'`
+				REFBASELINE=`echo $BASECONSTTERM | awk '{ print $4 " " $5 " " $6 ;}'`
+				echo $REFFRAME $SINGFILELIST $PATHDIRECTION \
+					$CENTERLON $CENTERLAT $LONC1 $LATC1 $LONC2 $LATC2 $LONC3 $LATC3 \
+					$LONC4 $LATC4 $REFALONTRACKBWIDTH \
+					$SECALONTRACKBWIDTH $BASELINE $REFBASELINE >> $OUTPUTLOCATION
+				
+			fi
+		fi
+	fi
+done

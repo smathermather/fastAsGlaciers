@@ -1,0 +1,10 @@
+#!/bin/sh
+# Requires the input of the orbit number, e.g. 46576
+# Generates commands to change directory to a given orbit in the slc directory,
+# and shows the contents of the Frames.nam file.
+
+ORBNUM=`grep $1 /amm/missions/thwaites_2004/slc/orbits/Orbits.nam | tr '"' ' ' | awk '{print $4}'`
+#DORBLIST=`cat orb_*/Frames.nam | grep '#File' | tr '//' ' '`
+#echo $ORBNUM
+ORBCOM='cd /amm/missions/thwaites_2004/slc/orbits/'$ORBNUM'; more Frames.nam'
+echo $ORBCOM

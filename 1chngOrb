@@ -1,0 +1,9 @@
+#!/bin/sh
+# Requires the input of the orbit number, e.g. 46576
+# Generates commands to change directory to a given orbit in the sar directory,
+# and shows the contents of the Frames.nam file.
+
+ORBNUM=`grep $1 /amm/missions/thwaites_2004/slc/orbits/Orbits.nam | tr '"' ' ' | awk '{print $4}'`
+#DORBLIST=`cat orb_*/Frames.nam | grep '#File' | tr '//' ' '`
+#echo $ORBNUM
+echo 'cd /amm/missions/thwaites_2004/sar/'$ORBNUM'; more Frames.nam'

@@ -1,0 +1,65 @@
+#!/bin/sh
+# This script converts Vexcel's *.hdr & *.map files into standard ENVI Files.
+# Assumes pixel size of 10m and bit depth of 16
+#
+# Written by Stephen Mather, Nov 2, 2005
+
+FILELIST=`ls *.map | tr '.' ' ' | awk '{ print $1 ; }'`
+
+# For ENVI Files
+EXTENSION='.hdr'
+
+echo Creating ENVI Files...
+for FILE in $FILELIST
+do
+#	if [ -f $FILE ]
+#	then
+		mv $FILE.hdr $FILE.hdrBAK
+		LINES=`grep lines $FILE.hdrBAK | awk '{ print $2 ; }'`
+		SAMPLES=`grep pixels $FILE.hdrBAK | awk '{ print $2 ; }'`
+		grep min_x $FILE.map | awk '{ print $2 ; }'
+		grep max_y $FILE.map | awk '{ print $2 ; }'
+		ORIGINALFILE=`grep file $FILE.hdrBAK | awk '{ print $2 ; }'`
+		echo	ENVI > $FILE$EXTENSION
+		echo	'description = { Created from Vexcel *.hdr and *.map files, ' $ORIGINALFILE '}' >> $FILE$EXTENSION
+		echo	samples = $SAMPLES >> $FILE$EXTENSION
+		echo	lines = $LINES >> $FILE$EXTENSION
+		echo	'bands = 1' >> $FILE$EXTENSION
+		echo	'header offset = 0' >> $FILE$EXTENSION
+		echo	'file type = ENVI Standard' >> $FILE$EXTENSION
+		echo	'data type = 2' >> $FILE$EXTENSION
+		echo	'interleave = bsq' >> $FILE$EXTENSION
+		echo	'sensor type = RADARSAT' >> $FILE$EXTENSION
+		echo	'byte order = 1' >> $FILE$EXTENSION
+#		echo	'map info = { PSG, ' >> $FILE$EXTENSION
+		echo $FILE$EXTENSION has been created.
+#	fi
+done
+
+
+# This script converts Vexcel's *.map files into standard ESRI World Files.
+#
+# Written by Stephen Mather, Oct 20, 2005
+
+FILELIST=`ls *.map | tr '.' ' ' | awk '{ print $1 ; }'`
+
+	# For ENVI Files
+	EXTENSION='.hrw'
+
+#set the pixelsize
+	PIXELSIZE=10
+
+echo Creating World Files...
+for FILE in $FILELIST
+do
+#	if [ -f $FILE ]
+#	then
+		echo	$PIXELSIZE > $FILE$EXTENSION
+		echo	0 >> $FILE$EXTENSION
+		echo	0 >> $FILE$EXTENSION
+		echo	-$PIXELSIZE >> $FILE$EXTENSION
+		grep min_x $FILE.map | awk '{ print $2 ; }' >> $FILE$EXTENSION
+		grep max_y $FILE.map | awk '{ print $2 ; }' >> $FILE$EXTENSION
+		echo $FILE$EXTENSION has been created.
+#	fi
+done
